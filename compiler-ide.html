@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C-like Compiler IDE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #1e1b4b 0%, #581c87 50%, #1e1b4b 100%);
+      min-height: 100vh;
+      color: white;
+      padding: 24px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      margin-bottom: 24px;
+    }
+    
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    h1 {
+      font-size: 30px;
+      font-weight: bold;
+      background: linear-gradient(to right, #c084fc, #f9a8d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-left: 52px;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .panel {
+      background: rgba(30, 41, 59, 0.5);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      border: 1px solid rgba(71, 85, 105, 0.5);
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    
+    .panel-header {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #d1d5db;
+    }
+    
+    .icon {
+      width: 16px;
+      height: 16px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(to right, #a855f7, #ec4899);
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-primary:hover {
+      transform: scale(1.05);
+      background: linear-gradient(to right, #9333ea, #db2777);
+    }
+    
+    .btn-primary:disabled {
+      background: linear-gradient(to right, #4b5563, #6b7280);
+      transform: scale(1);
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #475569;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #64748b;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .editor-container {
+      position: relative;
+      height: 500px;
+    }
+    
+    .line-numbers {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      background: rgba(15, 23, 42, 0.5);
+      border-right: 1px solid rgba(71, 85, 105, 0.5);
+      padding: 16px 12px;
+      text-align: right;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #6b7280;
+      user-select: none;
+      line-height: 24px;
+      overflow: hidden;
+    }
+    
+    .editor {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      color: #f3f4f6;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      padding: 16px;
+      padding-left: 64px;
+      border: none;
+      outline: none;
+      resize: none;
+      line-height: 24px;
+    }
+    
+    .console {
+      height: 160px;
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #d1d5db;
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.5);
+      white-space: pre-wrap;
+    }
+    
+    .tabs {
+      display: flex;
+      background: rgba(30, 41, 59, 0.8);
+      border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+      overflow-x: auto;
+    }
+    
+    .tab {
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #9ca3af;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      color: #d1d5db;
+      background: rgba(71, 85, 105, 0.3);
+    }
+    
+    .tab.active {
+      color: #c084fc;
+      background: linear-gradient(to right, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+      border-bottom-color: #c084fc;
+    }
+    
+    .output-content {
+      height: 300px;
+      overflow-y: auto;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+    
+    .token-item {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    
+    .token-item:hover {
+      background: rgba(71, 85, 105, 0.3);
+    }
+    
+    .token-type {
+      color: #60a5fa;
+      width: 96px;
+    }
+    
+    .token-value {
+      color: #c084fc;
+    }
+    
+    .token-line {
+      color: #6b7280;
+      margin-left: auto;
+    }
+    
+    .ir-item {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    
+    .ir-item:hover {
+      background: rgba(71, 85, 105, 0.3);
+    }
+    
+    .ir-index {
+      color: #6b7280;
+      width: 48px;
+    }
+    
+    .ir-op {
+      color: #22d3ee;
+      width: 128px;
+    }
+    
+    .ir-arg {
+      color: #fbbf24;
+    }
+    
+    .ir-result {
+      color: #f472b6;
+    }
+    
+    .ir-sep {
+      color: #4b5563;
+    }
+    
+    .ast-output {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      color: #34d399;
+    }
+    
+    .asm-output {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      color: #fb923c;
+    }
+    
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .info-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .info-card {
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+    
+    .info-card-1 {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(147, 51, 234, 0.1));
+      border-color: rgba(168, 85, 247, 0.2);
+    }
+    
+    .info-card-2 {
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(219, 39, 119, 0.1));
+      border-color: rgba(236, 72, 153, 0.2);
+    }
+    
+    .info-card-3 {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(6, 182, 212, 0.1));
+      border-color: rgba(34, 211, 238, 0.2);
+    }
+    
+    .info-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .info-card-1 .info-card-title { color: #c084fc; }
+    .info-card-2 .info-card-title { color: #f9a8d4; }
+    .info-card-3 .info-card-title { color: #67e8f9; }
+    
+    .info-card-text {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+      animation: fadeIn 0.2s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal {
+      background: #1e293b;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 450px;
+      overflow: hidden;
+      animation: zoomIn 0.2s;
+    }
+    
+    @keyframes zoomIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .modal-header {
+      background: linear-gradient(to right, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+      padding: 16px 24px;
+      border-bottom: 1px solid #475569;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .modal-action {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(71, 85, 105, 0.5);
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+      color: white;
+      text-align: left;
+    }
+    
+    .modal-action:hover {
+      background: #475569;
+    }
+    
+    .modal-action:last-child {
+      margin-bottom: 0;
+    }
+    
+    .action-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .action-icon-1 { background: rgba(168, 85, 247, 0.2); }
+    .action-icon-2 { background: rgba(34, 211, 238, 0.2); }
+    .action-icon-3 { background: rgba(236, 72, 153, 0.2); }
+    
+    .modal-action:hover .action-icon-1 { background: rgba(168, 85, 247, 0.3); }
+    .modal-action:hover .action-icon-2 { background: rgba(34, 211, 238, 0.3); }
+    .modal-action:hover .action-icon-3 { background: rgba(236, 72, 153, 0.3); }
+    
+    .action-text {
+      flex: 1;
+    }
+    
+    .action-title {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    
+    .action-desc {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      background: rgba(15, 23, 42, 0.5);
+      border-top: 1px solid #475569;
+    }
+    
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: #6b7280;
+    }
+    
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        </div>
+        <h1>C-like Compiler IDE</h1>
+      </div>
+      <p class="subtitle">Educational multi-stage compiler with real-time analysis</p>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span id="fileName">source.c</span>
+          </div>
+          <div class="btn-group">
+            <button onclick="showModal()" class="btn btn-secondary">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </button>
+            <button onclick="compile()" id="compileBtn" class="btn btn-primary">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Compile</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="editor-container">
+          <div class="line-numbers" id="lineNumbers"></div>
+          <textarea id="editor" class="editor" spellcheck="false">// Welcome to the C-like Compiler IDE
+// Try this example program:
+
+int a = 20;
+int b = 10;
+float result;
+
+if (a > b) {
+  result = a - b;
+} else {
+  result = 0;
+}
+</textarea>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+              <span>Console</span>
+            </div>
+          </div>
+          <div id="console" class="console">Ready to compile...</div>
+        </div>
+
+        <div class="panel" style="flex: 1;">
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab('tokens', this)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              Tokens
+            </button>
+            <button class="tab" onclick="switchTab('ast', this)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              AST
+            </button>
+            <button class="tab" onclick="switchTab('ir', this)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              IR
+            </button>
+            <button class="tab" onclick="switchTab('optimized', this)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6"></path>
+              </svg>
+              Optimized
+            </button>
+            <button class="tab" onclick="switchTab('assembly', this)">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+              </svg>
+              Assembly
+            </button>
+          </div>
+          <div id="outputContent" class="output-content">
+            <div class="empty-state">Run the compiler to see output</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-cards">
+      <div class="info-card info-card-1">
+        <div class="info-card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Language Features
+        </div>
+        <p class="info-card-text">int, float, if-else, arithmetic & relational operators</p>
+      </div>
+      
+      <div class="info-card info-card-2">
+        <div class="info-card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Optimization
+        </div>
+        <p class="info-card-text">Constant folding, dead code elimination</p>
+      </div>
+      
+      <div class="info-card info-card-3">
+        <div class="info-card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <rect x="9" y="9" width="6" height="6"></rect>
+          </svg>
+          Target
+        </div>
+        <p class="info-card-text">x86 Assembly (hypothetical)</p>
+      </div>
+    </div>
+
+    <div id="modal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            File Actions
+          </h2>
+        </div>
+        
+        <div class="modal-body">
+          <button onclick="newFile()" class="modal-action">
+            <div class="action-icon action-icon-1">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </div>
+            <div class="action-text">
+              <div class="action-title">New File</div>
+              <div class="action-desc">Create a new source file</div>
+            </div>
+          </button>
+
+          <button onclick="document.getElementById('fileInput').click()" class="modal-action">
+            <div class="action-icon action-icon-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="action-text">
+              <div class="action-title">Upload File</div>
+              <div class="action-desc">Load source code from file</div>
+            </div>
+          </button>
+
+          <button onclick="downloadFile()" class="modal-action">
+            <div class="action-icon action-icon-3">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <div class="action-text">
+              <div class="action-title">Download File</div>
+              <div class="action-desc">Save current source code</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <button onclick="hideModal()" class="btn btn-secondary" style="width: 100%;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".c,.txt,.src" onchange="uploadFile(event)" style="display: none;">
+  </div>
+
+  <script>
+    let compilationData = null;
+    let currentTab = 'tokens';
+    let fileName = 'source.c';
+    
+    // DOM elements
+    const editor = document.getElementById('editor');
+    const lineNumbers = document.getElementById('lineNumbers');
+    const fileNameEl = document.getElementById('fileName');
+    
+    function updateLineNumbers() {
+      const lines = editor.value.split('\n').length;
+      lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+    }
+    
+    editor.addEventListener('input', updateLineNumbers);
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+        updateLineNumbers();
+      }
+    });
+    
+    updateLineNumbers();
+    
+    // Compile function
+    async function compile() {
+      const btn = document.getElementById('compileBtn');
+      const consoleEl = document.getElementById('console');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div><span>Compiling...</span>';
+      consoleEl.textContent = 'Compiling...\n';
+      
+      // Simulate compilation time
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const code = editor.value;
+      const result = compileCode(code);
+      compilationData = result;
+      
+      if (result.errors.length > 0) {
+        consoleEl.textContent = `Compilation failed with ${result.errors.length} error(s):\n\n${result.errors.join('\n')}`;
+      } else {
+        consoleEl.textContent = '✓ Compilation successful!\n\nCheck the output tabs to see results from each stage.';
+      }
+      
+      renderOutput();
+      
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg><span>Compile</span>';
+    }
+    
+    // Switch tabs
+    function switchTab(tab, element) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      renderOutput();
+    }
+    
+    // Render output
+    function renderOutput() {
+      const output = document.getElementById('outputContent');
+      
+      if (!compilationData) {
+        output.innerHTML = '<div class="empty-state">Run the compiler to see output</div>';
+        return;
+      }
+      
+      if (compilationData.errors.length > 0 && currentTab !== 'tokens') {
+        output.innerHTML = '<div class="empty-state">Compilation failed. Cannot display output.</div>';
+        return;
+      }
+      
+      switch(currentTab) {
+        case 'tokens':
+          output.innerHTML = renderTokens(compilationData.tokens);
+          break;
+        case 'ast':
+          output.innerHTML = renderAst(compilationData.ast);
+          break;
+        case 'ir':
+          output.innerHTML = renderIR(compilationData.ir);
+          break;
+        case 'optimized':
+          output.innerHTML = renderIR(compilationData.optimizedIR);
+          break;
+        case 'assembly':
+          output.innerHTML = renderAssembly(compilationData.assembly);
+          break;
+        default:
+          output.innerHTML = '<div class="empty-state">Select a tab</div>';
+      }
+    }
+    
+    function renderTokens(tokens) {
+      if (!tokens || tokens.length === 0) return '<div class="empty-state">No tokens generated</div>';
+      return tokens.map(token => `
+        <div class="token-item">
+          <span class="token-type">${token.type}</span>
+          <span class="token-value">${token.value.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+          <span class="token-line">Line ${token.line}</span>
+        </div>
+      `).join('');
+    }
+    
+    function renderAst(ast) {
+      if (!ast) return '<div class="empty-state">No AST generated</div>';
+      return `<pre class="ast-output">${JSON.stringify(ast, null, 2)}</pre>`;
+    }
+    
+    function renderIR(ir) {
+      if (!ir || ir.length === 0) return '<div class="empty-state">No IR generated</div>';
+      return ir.map((op, i) => {
+        let opHtml = '';
+        const opIndex = `<span class="ir-index">${i}:</span>`;
+        const opCode = `<span class="ir-op">${op.op}</span>`;
+        
+        if (op.op === 'ASSIGN') {
+          opHtml = `${opCode} <span class="ir-result">${op.result}</span> <span class="ir-sep">=</span> <span class="ir-arg">${op.arg1}</span>`;
+        } else if (['ADD', 'SUB', 'MUL', 'DIV', 'GT', 'LT', 'EQ'].includes(op.op)) {
+          opHtml = `${opCode} <span class="ir-result">${op.result}</span> <span class="ir-sep">=</span> <span class="ir-arg">${op.arg1}</span> <span class="ir-sep">,</span> <span class="ir-arg">${op.arg2}</span>`;
+        } else if (op.op === 'IF_GOTO') {
+          opHtml = `${opCode} <span class="ir-arg">${op.condition}</span> <span class="ir-sep">GOTO</span> <span class="ir-result">${op.label}</span>`;
+        } else if (op.op === 'GOTO') {
+          opHtml = `${opCode} <span class="ir-result">${op.label}</span>`;
+        } else if (op.op === 'LABEL') {
+          opHtml = `<span class="ir-result">${op.label}:</span>`;
+        }
+        
+        return `<div class="ir-item">${op.op === 'LABEL' ? opHtml : `${opIndex} ${opHtml}`}</div>`;
+      }).join('');
+    }
+    
+    function renderAssembly(asm) {
+      if (!asm) return '<div class="empty-state">No Assembly generated</div>';
+      return `<pre class="asm-output">${asm}</pre>`;
+    }
+
+    // Modal functions
+    function showModal() {
+      document.getElementById('modal').classList.remove('hidden');
+    }
+    
+    function hideModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+    
+    function newFile() {
+      editor.value = '// New file\n\n';
+      fileName = 'new.c';
+      fileNameEl.textContent = fileName;
+      updateLineNumbers();
+      compilationData = null;
+      renderOutput();
+      document.getElementById('console').textContent = 'Ready to compile...';
+      hideModal();
+    }
+    
+    function uploadFile(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          editor.value = e.target.result;
+          fileName = file.name;
+          fileNameEl.textContent = fileName;
+          updateLineNumbers();
+          compilationData = null;
+          renderOutput();
+          document.getElementById('console').textContent = 'File loaded. Ready to compile...';
+        };
+        reader.readAsText(file);
+      }
+      hideModal();
+    }
+    
+    function downloadFile() {
+      const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      hideModal();
+    }
+    
+    // --- TOY COMPILER ---
+    
+    const tokenTypes = [
+      { type: 'WHITESPACE', regex: /^\s+/ },
+      { type: 'COMMENT', regex: /^\/\/.*/ },
+      { type: 'KEYWORD', regex: /^\b(int|float|if|else)\b/ },
+      { type: 'IDENTIFIER', regex: /^[a-zA-Z_][a-zA-Z0-9_]*/ },
+      { type: 'FLOAT_LITERAL', regex: /^[0-9]+\.[0-9]+/ },
+      { type: 'INT_LITERAL', regex: /^[0-9]+/ },
+      { type: 'OPERATOR', regex: /^(==|!=|<=|>=|>|<|=|\+|-|\*|\/)/ },
+      { type: 'PUNCTUATOR', regex: /^[;{}()]/ },
+    ];
+    
+    // 1. Tokenizer (Lexer)
+    function tokenize(code) {
+      let tokens = [];
+      let line = 1;
+      let cursor = 0;
+      
+      while (cursor < code.length) {
+        let match = null;
+        for (const tokenType of tokenTypes) {
+          match = code.substring(cursor).match(tokenType.regex);
+          if (match) {
+            const value = match[0];
+            if (tokenType.type !== 'WHITESPACE' && tokenType.type !== 'COMMENT') {
+              tokens.push({ type: tokenType.type, value, line });
+            }
+            if (tokenType.type === 'WHITESPACE') {
+              line += (value.match(/\n/g) || []).length;
+            }
+            cursor += value.length;
+            break;
+          }
+        }
+        if (!match) {
+          throw new Error(`Syntax Error: Unexpected character '${code[cursor]}' at line ${line}`);
+        }
+      }
+      return tokens;
+    }
+    
+    // 2. Parser
+    let parserCursor;
+    let parserTokens;
+    
+    function parse(tokens) {
+      parserCursor = 0;
+      parserTokens = tokens;
+      const ast = { type: 'Program', body: [] };
+      
+      while (parserCursor < parserTokens.length) {
+        ast.body.push(parseStatement());
+      }
+      return ast;
+    }
+    
+    function eat(type, value) {
+      const token = parserTokens[parserCursor];
+      if (!token || token.type !== type || (value && token.value !== value)) {
+        throw new Error(`Parse Error: Expected ${type} ${value || ''} but got ${token ? token.type : 'EOF'}`);
+      }
+      parserCursor++;
+      return token;
+    }
+    
+    function peek(type, value) {
+      const token = parserTokens[parserCursor];
+      return token && token.type === type && (!value || token.value === value);
+    }
+    
+    function parseStatement() {
+      if (peek('KEYWORD', 'int') || peek('KEYWORD', 'float')) {
+        return parseVariableDeclaration();
+      }
+      if (peek('KEYWORD', 'if')) {
+        return parseIfStatement();
+      }
+      if (peek('IDENTIFIER')) {
+        return parseAssignmentStatement();
+      }
+      throw new Error(`Parse Error: Unexpected token ${parserTokens[parserCursor].value}`);
+    }
+    
+    function parseVariableDeclaration() {
+      const type = eat('KEYWORD');
+      const id = eat('IDENTIFIER');
+      let init = null;
+      
+      if (peek('OPERATOR', '=')) {
+        eat('OPERATOR', '=');
+        init = parseExpression();
+      }
+      eat('PUNCTUATOR', ';');
+      return { type: 'VariableDeclaration', varType: type.value, id: id.value, init };
+    }
+    
+    function parseAssignmentStatement() {
+      const id = eat('IDENTIFIER');
+      eat('OPERATOR', '=');
+      const value = parseExpression();
+      eat('PUNCTUATOR', ';');
+      return { type: 'AssignmentStatement', id: id.value, value };
+    }
+    
+    function parseIfStatement() {
+      eat('KEYWORD', 'if');
+      eat('PUNCTUATOR', '(');
+      const condition = parseExpression();
+      eat('PUNCTUATOR', ')');
+      eat('PUNCTUATOR', '{');
+      const consequent = parseBlock();
+      eat('PUNCTUATOR', '}');
+      
+      let alternate = null;
+      if (peek('KEYWORD', 'else')) {
+        eat('KEYWORD', 'else');
+        eat('PUNCTUATOR', '{');
+        alternate = parseBlock();
+        eat('PUNCTUATOR', '}');
+      }
+      return { type: 'IfStatement', condition, consequent, alternate };
+    }
+    
+    function parseBlock() {
+      const body = [];
+      while (!peek('PUNCTUATOR', '}')) {
+        body.push(parseStatement());
+      }
+      return body;
+    }
+    
+    function parseExpression() {
+      let left = parsePrimary();
+      
+      while (peek('OPERATOR')) {
+        const op = parserTokens[parserCursor];
+        if (['+', '-', '*', '/', '>', '<', '==', '!='].includes(op.value)) {
+          eat('OPERATOR');
+          const right = parsePrimary();
+          left = { type: 'BinaryExpression', operator: op.value, left, right };
+        } else {
+          break;
+        }
+      }
+      return left;
+    }
+    
+    function parsePrimary() {
+      if (peek('INT_LITERAL')) {
+        return { type: 'Literal', value: parseInt(eat('INT_LITERAL').value) };
+      }
+      if (peek('FLOAT_LITERAL')) {
+        return { type: 'Literal', value: parseFloat(eat('FLOAT_LITERAL').value) };
+      }
+      if (peek('IDENTIFIER')) {
+        return { type: 'Identifier', name: eat('IDENTIFIER').value };
+      }
+      throw new Error('Parse Error: Expected literal or identifier');
+    }
+    
+    // 3. IR Generator
+    let tempCount;
+    let labelCount;
+    let ir;
+    
+    function generateIR(ast) {
+      tempCount = 0;
+      labelCount = 0;
+      ir = [];
+      
+      for (const node of ast.body) {
+        walkAST(node);
+      }
+      return ir;
+    }
+    
+    function newTemp() { return `t${tempCount++}`; }
+    function newLabel() { return `L${labelCount++}`; }
+    
+    function walkAST(node) {
+      if (!node) return null;
+      
+      switch (node.type) {
+        case 'VariableDeclaration':
+          if (node.init) {
+            const initVal = walkAST(node.init);
+            ir.push({ op: 'ASSIGN', result: node.id, arg1: initVal });
+          }
+          return node.id;
+        
+        case 'AssignmentStatement':
+          const val = walkAST(node.value);
+          ir.push({ op: 'ASSIGN', result: node.id, arg1: val });
+          return node.id;
+        
+        case 'IfStatement':
+          const endIfLabel = newLabel();
+          const elseLabel = node.alternate ? newLabel() : null;
+          
+          const conditionTemp = walkAST(node.condition);
+          ir.push({ op: 'IF_GOTO', condition: `NOT ${conditionTemp}`, label: elseLabel || endIfLabel });
+          
+          node.consequent.forEach(walkAST);
+          if (node.alternate) {
+            ir.push({ op: 'GOTO', label: endIfLabel });
+          }
+          
+          if (node.alternate) {
+            ir.push({ op: 'LABEL', label: elseLabel });
+            node.alternate.forEach(walkAST);
+          }
+          
+          ir.push({ op: 'LABEL', label: endIfLabel });
+          return null;
+        
+        case 'BinaryExpression':
+          const left = walkAST(node.left);
+          const right = walkAST(node.right);
+          const temp = newTemp();
+          let op;
+          switch (node.operator) {
+            case '+': op = 'ADD'; break;
+            case '-': op = 'SUB'; break;
+            case '*': op = 'MUL'; break;
+            case '/': op = 'DIV'; break;
+            case '>': op = 'GT'; break;
+            case '<': op = 'LT'; break;
+            case '==': op = 'EQ'; break;
+            default: op = 'UNKNOWN';
+          }
+          ir.push({ op, result: temp, arg1: left, arg2: right });
+          return temp;
+        
+        case 'Literal':
+          return node.value;
+        
+        case 'Identifier':
+          return node.name;
+      }
+    }
+    
+    // 4. Optimizer
+    function optimizeIR(irCode) {
+      // Create a deep copy to show non-destructive optimization
+      let optimized = JSON.parse(JSON.stringify(irCode));
+      
+      // Pass 1: Constant Folding
+      for (let i = 0; i < optimized.length; i++) {
+        const op = optimized[i];
+        if (['ADD', 'SUB', 'MUL', 'DIV'].includes(op.op)) {
+          const arg1 = parseFloat(op.arg1);
+          const arg2 = parseFloat(op.arg2);
+          
+          if (!isNaN(arg1) && !isNaN(arg2)) {
+            let result;
+            if (op.op === 'ADD') result = arg1 + arg2;
+            if (op.op === 'SUB') result = arg1 - arg2;
+            if (op.op === 'MUL') result = arg1 * arg2;
+            if (op.op === 'DIV') result = arg1 / arg2;
+            
+            // Replace operation with a simple assignment
+            optimized[i] = { op: 'ASSIGN', result: op.result, arg1: result };
+          }
+        }
+      }
+      
+      // Pass 2: Dead Code Elimination (simple)
+      const usedTemps = new Set();
+      optimized.forEach(op => {
+        if (typeof op.arg1 === 'string' && op.arg1.startsWith('t')) usedTemps.add(op.arg1);
+        if (typeof op.arg2 === 'string' && op.arg2.startsWith('t')) usedTemps.add(op.arg2);
+        if (typeof op.condition === 'string') {
+          const temp = op.condition.replace('NOT ', '');
+          if (temp.startsWith('t')) usedTemps.add(temp);
+        }
+      });
+      
+      optimized = optimized.filter(op => {
+        if (op.op === 'ASSIGN' && op.result.startsWith('t') && !usedTemps.has(op.result)) {
+          return false; // Dead code
+        }
+        return true;
+      });
+      
+      return optimized;
+    }
+    
+    // 5. Assembly Generator
+    function generateAssembly(irCode) {
+      let asm = 'SECTION .data\n';
+      const variables = new Set();
+      irCode.forEach(op => {
+        if (op.result && !op.result.startsWith('t') && !op.result.startsWith('L')) variables.add(op.result);
+        if (op.arg1 && !op.arg1.toString().startsWith('t') && isNaN(parseFloat(op.arg1))) variables.add(op.arg1);
+        if (op.arg2 && !op.arg2.toString().startsWith('t') && isNaN(parseFloat(op.arg2))) variables.add(op.arg2);
+      });
+      
+      variables.forEach(v => {
+        asm += `    ${v} DD 0\n`;
+      });
+      
+      asm += '\nSECTION .text\n    global _start\n\n_start:\n';
+      
+      const getArg = (arg) => {
+        if (typeof arg === 'number') return arg;
+        if (arg.startsWith('t')) return `EAX`; // Simple: assume temp is in EAX
+        return `[${arg}]`;
+      };
+      
+      for (const op of irCode) {
+        switch (op.op) {
+          case 'LABEL':
+            asm += `${op.label}:\n`;
+            break;
+          case 'ASSIGN':
+            asm += `    MOV EAX, ${getArg(op.arg1)}\n`;
+            asm += `    MOV [${op.result}], EAX\n`;
+            break;
+          case 'ADD':
+            asm += `    MOV EAX, ${getArg(op.arg1)}\n`;
+            asm += `    ADD EAX, ${getArg(op.arg2)}\n`;
+            asm += `    MOV [${op.result}], EAX\n`; // Store in temp
+            break;
+          case 'SUB':
+            asm += `    MOV EAX, ${getArg(op.arg1)}\n`;
+            asm += `    SUB EAX, ${getArg(op.arg2)}\n`;
+            asm += `    MOV [${op.result}], EAX\n`;
+            break;
+          case 'GT':
+            asm += `    MOV EAX, ${getArg(op.arg1)}\n`;
+            asm += `    CMP EAX, ${getArg(op.arg2)}\n`;
+            asm += `    SETG AL\n`; // Set AL to 1 if Greater, 0 otherwise
+            asm += `    MOVZX EAX, AL\n`; // Zero-extend AL into EAX
+            asm += `    MOV [${op.result}], EAX\n`;
+            break;
+          case 'IF_GOTO':
+            const temp = op.condition.replace('NOT ', '');
+            asm += `    MOV EAX, [${temp}]\n`;
+            asm += `    CMP EAX, 0\n`; // Check if condition is false
+            asm += `    JE ${op.label}\n`; // Jump if Equal (to 0, i.e., false)
+            break;
+          case 'GOTO':
+            asm += `    JMP ${op.label}\n`;
+            break;
+        }
+      }
+      
+      asm += '\n    ; End of program\n';
+      return asm;
+    }
+    
+    // Main compilation pipeline
+    function compileCode(code) {
+      let tokens, ast, ir, optimizedIR, assembly;
+      const errors = [];
+      
+      try {
+        tokens = tokenize(code);
+      } catch (e) {
+        errors.push(e.message);
+        return { errors, tokens, ast: null, ir: null, optimizedIR: null, assembly: null };
+      }
+      
+      try {
+        ast = parse(tokens);
+      } catch (e) {
+        errors.push(e.message);
+        return { errors, tokens, ast, ir: null, optimizedIR: null, assembly: null };
+      }
+      
+      try {
+        ir = generateIR(ast);
+      } catch (e) {
+        errors.push(e.message);
+        return { errors, tokens, ast, ir, optimizedIR: null, assembly: null };
+      }
+      
+      try {
+        optimizedIR = optimizeIR(ir);
+      } catch (e) {
+        errors.push(e.message);
+        return { errors, tokens, ast, ir, optimizedIR, assembly: null };
+      }
+      
+      try {
+        assembly = generateAssembly(optimizedIR);
+      } catch (e) {
+        errors.push(e.message);
+        return { errors, tokens, ast, ir, optimizedIR, assembly };
+      }
+      
+      return { errors, tokens, ast, ir, optimizedIR, assembly };
+    }
+  </script>
+</body>
+</html>

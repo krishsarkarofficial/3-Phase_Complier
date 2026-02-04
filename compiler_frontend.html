@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimpleC Compiler IDE</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for webkit browsers */
+        pre::-webkit-scrollbar { width: 8px; }
+        pre::-webkit-scrollbar-track { background: #1f2937; }
+        pre::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        pre::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .tab-button { transition: all 0.2s ease-in-out; }
+        .tab-button.active {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: #ffffff; /* text-white */
+            border-bottom-color: transparent;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        /* Simple spinner */
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans p-4 md:p-8" x-data="compilerApp()">
+    
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- COLUMN 1: Code Editor and Compile Button -->
+        <div class="flex flex-col h-[80vh]">
+            <div class="flex items-center justify-between mb-2">
+                <h1 class="text-2xl font-bold text-white">SimpleC IDE</h1>
+                <button @click="compile()" :disabled="loading" 
+                        class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!loading">Compile</span>
+                    <span x-show="loading"><div class="spinner"></div></span>
+                </button>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg shadow-xl flex-grow flex flex-col">
+                <div class="flex-shrink-0 bg-gray-900 rounded-t-lg p-2 flex items-center">
+                    <span class="h-3 w-3 bg-red-500 rounded-full mr-2"></span>
+                    <span class="h-3 w-3 bg-yellow-400 rounded-full mr-2"></span>
+                    <span class="h-3 w-3 bg-green-500 rounded-full mr-auto"></span>
+                    <span class="text-sm text-gray-400">source_code.src</span>
+                </div>
+                <textarea x-model="sourceCode" 
+                          id="codeEditor"
+                          class="w-full h-full flex-grow p-4 bg-transparent text-gray-200 font-mono text-sm resize-none focus:outline-none"
+                          placeholder="Type your code here..."
+                          spellcheck="false"
+                          autocomplete="off"
+                          autocorrect="off"
+                          autocapitalize="off"></textarea>
+            </div>
+        </div>
+
+        <!-- COLUMN 2: Output Panels -->
+        <div class="flex flex-col h-[80vh]">
+            <!-- Tab Buttons -->
+            <div class="flex flex-wrap border-b border-gray-700 mb-2">
+                <button @click="activeTab = 'errors'" :class="{'active': activeTab === 'errors'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    Errors <span x-show="outputs.errors.length > 0" class="ml-1 inline-block bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full" x-text="outputs.errors.length"></span>
+                </button>
+                <button @click="activeTab = 'final_code'" :class="{'active': activeTab === 'final_code'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    Final Code
+                </button>
+                <button @click="activeTab = 'ast'" :class="{'active': activeTab === 'ast'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    AST
+                </button>
+                <button @click="activeTab = 'optimized_ir'" :class="{'active': activeTab === 'optimized_ir'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    Optimized IR
+                </button>
+                <button @click="activeTab = 'ir'" :class="{'active': activeTab === 'ir'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    IR
+                </button>
+                <button @click="activeTab = 'tokens'" :class="{'active': activeTab === 'tokens'}"
+                        class="tab-button text-gray-400 hover:text-white py-2 px-4 border-b-2 border-transparent hover:border-blue-500 font-medium">
+                    Tokens
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="bg-gray-800 rounded-lg shadow-xl flex-grow overflow-hidden">
+                
+                <!-- Status Message (Success/Failure) -->
+                <div x-show="statusMessage"
+                     :class="statusType === 'success' ? 'bg-green-600' : 'bg-red-600'"
+                     class="p-3 text-white font-bold text-center"
+                     x-text="statusMessage">
+                </div>
+
+                <!-- Errors Panel -->
+                <div x-show="activeTab === 'errors'" class="tab-content active h-full">
+                    <pre x-show="outputs.errors.length > 0" class="h-full p-4 overflow-auto text-red-400 font-mono text-sm"><template x-for="(error, index) in outputs.errors" :key="index"><span x-text="error + '\n\n'"></span></template></pre>
+                    <div x-show="outputs.errors.length === 0" class="h-full p-4 flex items-center justify-center text-gray-400">
+                        No errors.
+                    </div>
+                </div>
+
+                <!-- Other Panels (Generic) -->
+                <template x-for="tab in ['final_code', 'ast', 'optimized_ir', 'ir', 'tokens']" :key="tab">
+                    <div x-show="activeTab === tab" class="tab-content h-full">
+                        <pre class="h-full p-4 overflow-auto text-gray-300 font-mono text-sm" x-text="outputs[tab] || `No ${tab.replace('_', ' ')} generated.`"></pre>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </main>
+
+    <!-- Load Alpine.js -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script>
+        function compilerApp() {
+            return {
+                sourceCode: `// This file tests the error recovery features
+
+int x = 10 // Missing semicolon
+
+if (x > 5 { // Missing closing parenthesis
+    x = 1;
+}
+
+if (y > 2); { // Unexpected semicolon
+    y = 2;
+}
+
+x = 5 // Missing semicolon
+y = 10;
+`,
+                activeTab: 'errors', // Start on errors tab
+                loading: false,
+                statusMessage: '',
+                statusType: 'success', // 'success' or 'error'
+                outputs: {
+                    errors: [],
+                    tokens: '',
+                    ast: '',
+                    ir: '',
+                    optimized_ir: '',
+                    final_code: ''
+                },
+
+                // --- THIS IS THE REAL COMPILE FUNCTION ---
+                async compile() {
+                    this.loading = true;
+                    this.statusMessage = '';
+                    this.resetOutputs();
+
+                    try {
+                        const response = await fetch('http://127.0.0.1:5000/compile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ code: this.sourceCode })
+                        });
+
+                        const results = await response.json();
+
+                        if (!response.ok) {
+                            // Handle server-side errors (500, etc.)
+                            this.statusMessage = 'Compilation Failed: Server Error';
+                            this.statusType = 'error';
+                            this.outputs.errors = results.errors || ['Server returned an error.'];
+                            this.activeTab = 'errors';
+                        } else {
+                            // Successful compilation (even if there are code errors)
+                            this.outputs = { ...this.outputs, ...results };
+                            
+                            if (results.errors && results.errors.length > 0) {
+                                this.statusMessage = 'Compilation Failed. See errors below.';
+                                this.statusType = 'error';
+                                this.activeTab = 'errors';
+                            } else {
+                                this.statusMessage = 'Compilation Successful!';
+                                this.statusType = 'success';
+                                this.activeTab = 'final_code'; // Show final code on success
+                            }
+                        }
+
+                    } catch (error) {
+                        // Handle network errors (e.g., server not running)
+                        this.statusMessage = 'Error: Cannot connect to compiler server.';
+                        this.statusType = 'error';
+                        this.outputs.errors = [
+                            'Could not connect to the backend server (http://127.0.0.1:5000).',
+                            'Is the "server.py" script running in your terminal?'
+                        ];
+                        this.activeTab = 'errors';
+                        console.error('Fetch error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                resetOutputs() {
+                    this.outputs = {
+                        errors: [],
+                        tokens: '',
+                        ast: '',
+                        ir: '',
+                        optimized_ir: '',
+                        final_code: ''
+                    };
+                }
+            };
+        }
+    </script>
+</body>
+</html>
+

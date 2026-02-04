@@ -1,0 +1,9 @@
+int a = 5;
+int b = 10;
+int result;
+
+if (b > a) {
+    result = b - a; // Should be 10 - 5 = 5
+} else {
+    result = a - b;
+}

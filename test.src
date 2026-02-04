@@ -1,0 +1,9 @@
+int a = 20;
+    int b = 10;
+    float result;
+
+    if (a > b) {
+      result = a - b; // result should be 10
+    } else {
+      result = 0;
+    }

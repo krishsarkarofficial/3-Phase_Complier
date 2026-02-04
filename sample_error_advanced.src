@@ -1,0 +1,9 @@
+// This file tests the new error recovery features
+
+int x = 10 // Missing semicolon
+
+if (x > 5 { // Missing closing parenthesisx = 1;}
+
+if (y > 2); { // Unexpected semicolony = 2;}
+
+x = 5 // Missing semicolony = 10;
